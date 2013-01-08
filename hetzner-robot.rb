@@ -36,8 +36,16 @@ while true
       end
       entry[key] = value
     end
-    db.execute "insert into servers values (?, ?, ?, ?, ?, ?, ?, ?)", [entry['id'], entry['cpuentry'], ['cpu_benchma'], entry['ram'], entry['hdd'], entry['price'], entry['reduction_timer'], entry['timestamp']]
+    db.execute "insert into servers values (?, ?, ?, ?, ?, ?, ?, ?)",
+      [entry['id'], 
+      entry['cpu'],
+      entry['cpu_benchmark'],
+      entry['ram'],
+      entry['hd'],
+      entry['price'],
+      entry['nextreduce'],
+      timestamp]
   end
-  puts "Sleeping 10 minutes until next iteration"
+  puts "#{Time.now.to_s} - Sleeping 10 minutes until next iteration"
   sleep 10*60
 end
