@@ -46,6 +46,6 @@ while true
       entry['nextreduce'],
       timestamp]
   end
-  puts "#{Time.now.to_s} - Sleeping 10 minutes until next iteration"
-  sleep 10*60
+  puts "#{Time.now.to_s} - Sleeping 30 minutes until next iteration"
+  sleep 30*60
 end
