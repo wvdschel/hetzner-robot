@@ -41,8 +41,12 @@ days.each do |day, rows|
   f.print "#{day.to_s}"
   disk_spaces.each do |space|
   	rows = rows_by_space[space]
-  	prices = rows.map { |row| id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row; price }
-  	f.print ",#{prices.min};#{prices.min};#{prices.max}"
+    if rows
+      prices = rows.map { |row| id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row; price }
+      f.print ",#{prices.min};#{prices.min};#{prices.max}"
+    else
+      f.print ","
+    end
   end
   f.puts
 end
