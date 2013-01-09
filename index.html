@@ -8,32 +8,49 @@
 	    document.getElementById(graphName),
 	      "csv/"+graphName+".csv",
 	      {
-  	        rollPeriod: 1,
-	        showRoller: true,
 	        customBars: true,
 	        ylabel: 'Price',
 	        legend: 'always',
 	        labelsDivStyles: { 'textAlign': 'right' }
 	      }
 	    );
-	    setTimeout(alert(g.getLabels(), 1000);
+	    g = new Dygraph(
+	    document.getElementById(graphName+'_available'),
+	      "csv/"+graphName+"_available.csv",
+	      {
+	        ylabel: 'Number of servers',
+	        legend: 'always',
+	        labelsDivStyles: { 'textAlign': 'right' }
+	      }
+	    );
 	  }
 	</script>
 	<style type="text/css">
+	h2 {
+		padding-top: 15pt;
+		clear: both;
+	}
 	div.graph {
-		width: 90%;
+		width: 45%;
 		height: 400px;
+		/*border: 1px solid red;*/
+		float: left;
+	}
+	div.available {
+		float: right;
 	}
 	</style>
 </head>
 <body>
 	<h2>Diskspace</h2>
-	<div id="disksize" style="width:90%; height:450px;"></div>
+	<div class="graph" id="disksize"></div>
+	<div class="graph available" id="disksize_available"></div>
 	<script type="text/javascript">
 	genGraph("disksize");
 	</script>
 	<h2>Number of disks</h2>
-	<div id="diskcount" style="width:90%; height:450px;"></div>
+	<div class="graph" id="diskcount"></div>
+	<div class="graph available" id="diskcount_available"></div>
 	<script type="text/javascript">
 	genGraph("diskcount");
 	</script>

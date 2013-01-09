@@ -1,78 +1,76 @@
 require 'fileutils'
 require "sqlite3"
 
-db = SQLite3::Database.new("servers.db")
-FileUtils.mkdir_p('csv')
-rows = db.execute( "select* from servers order by timestamp" )
+class ServerAnalyzer
+  def initialize(dbfile)  
+    @db = SQLite3::Database.new(dbfile)
+    FileUtils.mkdir_p('csv')
+    @rows = @db.execute( "select * from servers order by timestamp" )
+    now = Time.now
 
-days = rows.group_by do |row|
-  timestamp = row.last
-  now = Time.now
-  timestamp = now - (now.to_i - timestamp)
-  timestamp.to_date
+    @days = @rows.group_by do |row|
+      timestamp = row.last
+      timestamp = now - (now.to_i - timestamp)
+      timestamp.to_date
+    end
+  end
+
+  def generate_csv(filename)
+    raise "Block required by generate_csv!" if not block_given?
+
+    field_values = @rows.map do |row|
+      id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
+      yield(id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp)
+    end.uniq.sort_by { |f| f.to_i }
+
+    f = File.open("csv/#{filename}.csv", 'w')
+    f_available = File.open("csv/#{filename}_available.csv", 'w')
+    f.puts("Date,"+field_values.join(','))
+    f_available.puts("Date,"+field_values.join(','))
+
+    @days.each do |day, rows|
+      rows_by_field = @rows.group_by do |row|
+        id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
+        yield(id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp)
+      end
+
+      f.print "#{day.to_s}"
+      f_available.print "#{day.to_s}"
+      field_values.each do |val|
+        rows = rows_by_field[val]
+        if rows
+          prices = rows.map { |row| id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row; price }
+          f.print ",#{prices.min};#{prices.min};#{prices.max}"
+          uniq_servers = rows.map { |row| id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row; id }.uniq
+          f_available.print ",#{uniq_servers.size}"
+        else
+          f.print ","
+          f_available.print ","
+        end
+      end
+      f.puts
+      f_available.puts
+    end
+    f_available.close
+    f.close
+  end
 end
+
+analyzer = ServerAnalyzer.new("servers.db")
 
 ### Disk space ###
 
-def parse_hdd_storage(hd)
+analyzer.generate_csv("disksize") do |id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp|
   drivecount = hd[/^\d+ x/].to_i
   size = hd[/\d+(\.\d+)? [GT]B/]
   size, unit = size.split(' ')
   case unit
-  when 'GB' then return size.to_i * drivecount
-  when 'TB' then return (size.to_f * drivecount * 1000).to_i
+  when 'GB' then "#{size.to_i * drivecount}GB"
+  when 'TB' then "#{(size.to_f * drivecount * 1000).to_i}GB"
   end
 end
-
-disk_spaces = rows.map do |row|
-  id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
-  parse_hdd_storage(hd)
-end.uniq.sort
-
-f = File.open('csv/disksize.csv', 'w')
-f.puts("Date,"+disk_spaces.map { |s| "#{s}GB" }.join(','))
-
-days.each do |day, rows|
-  rows_by_space = rows.group_by do |row|
-    id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
-    parse_hdd_storage(hd)
-  end
-
-  f.print "#{day.to_s}"
-  disk_spaces.each do |space|
-    rows = rows_by_space[space]
-    if rows
-      prices = rows.map { |row| id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row; price }
-      f.print ",#{prices.min};#{prices.min};#{prices.max}"
-    else
-      f.print ","
-    end
-  end
-  f.puts
-end
-f.close
 
 ### Disk count ###
-disk_counts = rows.map do |row|
-  id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
+analyzer.generate_csv("diskcount") do |id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp|
   hd[/^\d+ x/].to_i
-end.uniq.sort
-
-f = File.open('csv/diskcount.csv', 'w')
-f.puts("Date,"+disk_counts.join(','))
-
-days.each do |day, rows|
-  rows_by_space = rows.group_by do |row|
-    id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
-    hd[/^\d+ x/].to_i
-  end
-
-  f.print "#{day.to_s}"
-  disk_counts.each do |disks|
-    rows = rows_by_space[disks]
-    prices = rows.map { |row| id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row; price }
-    f.print ",#{prices.min};#{prices.min};#{prices.max}"
-  end
-  f.puts
 end
-f.close
