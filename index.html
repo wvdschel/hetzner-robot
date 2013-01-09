@@ -3,20 +3,21 @@
 	<title>Hetzner server bidding historical data</title>
 	<script type="text/javascript" src="dygraph-combined.js"></script>
 	<script>
-		function genGraph(graphName) {
-			g = new Dygraph(
-				document.getElementById(graphName),
-				"csv/"+graphName+".csv",
-				{
-					rollPeriod: 1,
-					showRoller: true,
-					customBars: true,
-					ylabel: 'Price',
-					legend: 'always',
-					labelsDivStyles: { 'textAlign': 'right' }
-					}
-				);
-		}
+	  function genGraph(graphName) {
+	    g = new Dygraph(
+	    document.getElementById(graphName),
+	      "csv/"+graphName+".csv",
+	      {
+  	        rollPeriod: 1,
+	        showRoller: true,
+	        customBars: true,
+	        ylabel: 'Price',
+	        legend: 'always',
+	        labelsDivStyles: { 'textAlign': 'right' }
+	      }
+	    );
+	    setTimeout(alert(g.getLabels(), 1000);
+	  }
 	</script>
 	<style type="text/css">
 	div.graph {
