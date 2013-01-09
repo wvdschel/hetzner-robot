@@ -8,8 +8,7 @@ rows = db.execute( "select* from servers order by timestamp" )
 days = rows.group_by do |row|
   timestamp = row.last
   now = Time.now
-  timestamp = now + (now.to_i - timestamp)
-  puts "#{row.last} = #{timestamp.to_s} = #{timestamp.to_date.to_s}"
+  timestamp = now - (now.to_i - timestamp)
   timestamp.to_date
 end
 
