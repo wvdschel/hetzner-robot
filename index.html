@@ -3,26 +3,67 @@
 	<title>Hetzner server bidding historical data</title>
 	<script type="text/javascript" src="dygraph-combined.js"></script>
 	<script>
+	  var graphs = {};
+
+	  function checkboxClicked(box) {
+	  	var id = box.id.split('_');
+	  	var graphName = id[0];
+	  	var series = parseInt(id[1]);
+	  	if(graphs[graphName] != null)
+	  	{
+	  		for(var i = 0; i < graphs[graphName].length; i++)
+	  		{
+	  			graphs[graphName][i].setVisibility(series, box.checked);
+	  		}
+	  	} else {
+	  		alert("Graph not found: " + graphName + "\n");
+	  	}
+	  }
+
 	  function genGraph(graphName) {
-	    g = new Dygraph(
+	  	var graphs_finished = 0;
+	  	var draw_callback = function(g, initial) {
+	  		if(initial) {
+	  			graphs_finished++;
+	  			if(graphs_finished == 2)
+	  			{
+	  				var div = document.getElementById(graphName+'_series');
+	  				div.innerHTML = "";
+	  				labels = g.getLabels();
+	  				for(var i = 1; i < labels.length; i++)
+	  				{
+	  					div.innerHTML += "<input type='checkbox' id='" +
+	  							graphName + "_" + (i-1) + "' checked onClick='checkboxClicked(this)'>"
+	  					div.innerHTML += "<label for='" +
+	  							graphName + "_" + (i-1) + "'>" + labels[i] +
+	  							"</label>"
+	  				}
+	  			}
+	  		}
+	  	}
+
+	    var g_price = new Dygraph(
 	    document.getElementById(graphName),
 	      "csv/"+graphName+".csv",
 	      {
 	        customBars: true,
 	        ylabel: 'Price',
 	        legend: 'always',
-	        labelsDivStyles: { 'textAlign': 'right' }
+	        labelsDivStyles: { 'textAlign': 'right' },
+	        drawCallback: draw_callback
 	      }
 	    );
-	    g = new Dygraph(
+	    g_available = new Dygraph(
 	    document.getElementById(graphName+'_available'),
 	      "csv/"+graphName+"_available.csv",
 	      {
 	        ylabel: 'Number of servers',
 	        legend: 'always',
-	        labelsDivStyles: { 'textAlign': 'right' }
+	        labelsDivStyles: { 'textAlign': 'right' },
+	        drawCallback: draw_callback
 	      }
 	    );
+	    graphs[graphName] = [g_price, g_available];
 	  }
 	</script>
 	<style type="text/css">
@@ -39,20 +80,41 @@
 	div.available {
 		float: right;
 	}
+	div.series {
+		width: 100%;
+		border: 1px solid black;
+		clear: both;
+	}
 	</style>
 </head>
 <body>
 	<h2>Diskspace</h2>
 	<div class="graph" id="disksize"></div>
 	<div class="graph available" id="disksize_available"></div>
+	<div class="series" id="disksize_series"></div>
 	<script type="text/javascript">
 	genGraph("disksize");
 	</script>
 	<h2>Number of disks</h2>
 	<div class="graph" id="diskcount"></div>
 	<div class="graph available" id="diskcount_available"></div>
+	<div class="series" id="diskcount_series"></div>
 	<script type="text/javascript">
 	genGraph("diskcount");
+	</script>
+	<h2>CPU benchmark score</h2>
+	<div class="graph" id="benchmark"></div>
+	<div class="graph available" id="benchmark_available"></div>
+	<div class="series" id="benchmark_series"></div>
+	<script type="text/javascript">
+	genGraph("benchmark");
+	</script>
+	<h2>RAM</h2>
+	<div class="graph" id="ram"></div>
+	<div class="graph available" id="ram_available"></div>
+	<div class="series" id="ram_series"></div>
+	<script type="text/javascript">
+	genGraph("ram");
 	</script>
 </body>
 <html>

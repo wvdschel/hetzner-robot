@@ -11,7 +11,7 @@ class ServerAnalyzer
     @days = @rows.group_by do |row|
       timestamp = row.last
       timestamp = now - (now.to_i - timestamp)
-      timestamp.to_date
+      timestamp.to_s
     end
   end
 
@@ -73,4 +73,16 @@ end
 ### Disk count ###
 analyzer.generate_csv("diskcount") do |id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp|
   hd[/^\d+ x/].to_i
+end
+
+### Benchmark score ###
+analyzer.generate_csv("benchmark") do |id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp|
+  lower = Math.sqrt(cpu_benchmark).to_i / 5
+  upper = lower + 1
+  "#{(lower*5)**2}-#{(upper*5)**2}"
+end
+
+### Availiable RAM ###
+analyzer.generate_csv("ram") do |id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp|
+  ram
 end
