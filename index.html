@@ -4,6 +4,7 @@
 	<script type="text/javascript" src="dygraph-combined.js"></script>
 	<script>
 	  var graphs = {};
+	  var rescaling = false;
 
 	  function checkboxClicked(box) {
 	  	var id = box.id.split('_');
@@ -39,6 +40,19 @@
 	  							"</label>"
 	  				}
 	  			}
+	  		} else if(!rescaling) {
+	  			range = g.xAxisRange();
+	  			rescaling = true;
+	  			for (var k in graphs) {
+					if (graphs.hasOwnProperty(k)) {
+						for(var i = 0; i < graphs[k].length; i++) {
+							graphs[k][i].updateOptions( {
+								dateWindow: range
+								} );
+						}
+					}
+				}
+				rescaling = false;
 	  		}
 	  	}
 
