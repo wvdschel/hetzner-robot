@@ -5,6 +5,124 @@
 	<script>
 	  var graphs = {};
 	  var rescaling = false;
+	  var servers = null;
+
+	  function matchingServer(config) {
+	  	for(var field in config)
+	  	{
+	  		if(config.hasOwnProperty(field) && graphs.hasOwnProperty(field)) {
+		  		var values = graphs[field][0].getLabels();
+		  		for(var i = 1; i < values.length; i++) {
+		  			//alert('Checking ' + field + '(' + config[field] + ') ?= ' + values[i]);
+		  			if(config[field] == values[i]) {
+		  				var visibility = graphs[field][0].visibility();
+		  				if(visibility[i-1] == false) {
+		  					return false;
+		  				} else {
+		  					break;
+		  				}
+		  			}
+		  		}
+		  	}
+	  	}
+	  	return true;
+	  }
+
+	  function redrawSelectionGraph() {
+		 if(servers == null) {
+		  	var draw_callback = function(g, initial) {
+		  		if(!initial && !rescaling) {
+		  			range = g.xAxisRange();
+		  			rescaling = true;
+		  			for (var k in graphs) {
+						if (graphs.hasOwnProperty(k)) {
+							for(var i = 0; i < graphs[k].length; i++) {
+								graphs[k][i].updateOptions( {
+									dateWindow: range
+								} );
+							}
+						}
+					}
+					rescaling = false;
+		  		}
+		  	}
+
+		    var g_price = new Dygraph(
+		      document.getElementById('selection'),
+		      "Date,Price\n2013-1-1,0;0;0\n",
+		      {
+		        customBars: true,
+		        ylabel: 'Price',
+		        legend: 'always',
+		        labelsDivStyles: { 'textAlign': 'right' },
+		        drawCallback: draw_callback
+		      }
+		    );
+		    var g_available = new Dygraph(
+		      document.getElementById('selection_available'),
+		      "Date,Count\n2013-1-1,0;0;0\n",
+		      {
+		        ylabel: 'Number of servers',
+		        legend: 'always',
+		        labelsDivStyles: { 'textAlign': 'right' },
+		        drawCallback: draw_callback
+		      }
+		    );
+			graphs['selection'] = [g_price, g_available];
+
+			var http_request = new XMLHttpRequest();
+			http_request.open('GET', 'features.json', true);
+			http_request.onreadystatechange = function () {
+			    if (http_request.readyState == 4 && (http_request.status == 200 || http_request.status == 0) ) {
+			        unparsed_servers = JSON.parse(http_request.responseText);
+			        servers = {};
+		  			for (var day in unparsed_servers) {
+						if (unparsed_servers.hasOwnProperty(day)) {
+							servers[day] = {};
+							for(var server in unparsed_servers[day]) {
+								if(unparsed_servers[day].hasOwnProperty(server)) {
+									servers[day][server] = [unparsed_servers[day][server], JSON.parse(server)];
+								}
+							}
+						}
+					}
+			        redrawSelectionGraph();
+			    }
+			};
+			http_request.overrideMimeType('application/json');
+			http_request.send(null);
+		} else {
+			var serverPrice = "Date,Price\n";
+			var serverCount = "Date,Count\n";
+  			for (var day in servers) {
+				if (servers.hasOwnProperty(day)) {
+  					var minPrice = Infinity;
+  					var maxPrice = 0;
+  					var count    = 0;
+					for(var server in servers[day]) {
+						if(servers[day].hasOwnProperty(server)) {
+							var config = servers[day][server][1];
+							var price = servers[day][server][0];
+							if(matchingServer(config)) {
+								count++;
+								if(price < minPrice)
+									minPrice = price;
+								if(price > maxPrice)
+									maxPrice = price;
+							}
+						}
+					}
+					var price = '' + maxPrice + ';' + minPrice + ';' + minPrice;
+					if(minPrice == Infinity)
+						price = '';
+					serverPrice += day + ',' + price + "\n";
+					serverCount += day + ',' + count + "\n";
+				}
+			}
+			graphs['selection'][0].updateOptions( { 'file': serverPrice } );
+			graphs['selection'][1].updateOptions( { 'file': serverCount } );
+		}
+	  }
 
 	  function checkboxClicked(box) {
 	  	var id = box.id.split('_');
@@ -16,6 +134,7 @@
 	  		{
 	  			graphs[graphName][i].setVisibility(series, box.checked);
 	  		}
+	  		redrawSelectionGraph();
 	  	} else {
 	  		alert("Graph not found: " + graphName + "\n");
 	  	}
@@ -102,33 +221,31 @@
 	</style>
 </head>
 <body>
+	<h2>All matching servers</h2>
+	<div class="graph" id="selection"></div>
+	<div class="graph available" id="selection_available"></div>
 	<h2>Diskspace</h2>
 	<div class="graph" id="disksize"></div>
 	<div class="graph available" id="disksize_available"></div>
 	<div class="series" id="disksize_series"></div>
-	<script type="text/javascript">
-	genGraph("disksize");
-	</script>
 	<h2>Number of disks</h2>
 	<div class="graph" id="diskcount"></div>
 	<div class="graph available" id="diskcount_available"></div>
 	<div class="series" id="diskcount_series"></div>
-	<script type="text/javascript">
-	genGraph("diskcount");
-	</script>
 	<h2>CPU benchmark score</h2>
 	<div class="graph" id="benchmark"></div>
 	<div class="graph available" id="benchmark_available"></div>
 	<div class="series" id="benchmark_series"></div>
-	<script type="text/javascript">
-	genGraph("benchmark");
-	</script>
 	<h2>RAM</h2>
 	<div class="graph" id="ram"></div>
 	<div class="graph available" id="ram_available"></div>
 	<div class="series" id="ram_series"></div>
 	<script type="text/javascript">
+	genGraph("disksize");
+	genGraph("diskcount");
+	genGraph("benchmark");
 	genGraph("ram");
+	redrawSelectionGraph();
 	</script>
 </body>
 <html>
