@@ -1,5 +1,6 @@
 require 'fileutils'
-require "sqlite3"
+require 'sqlite3'
+require 'json'
 
 class ServerAnalyzer
   def initialize(dbfile)  
@@ -66,10 +67,13 @@ class ServerAnalyzer
     price_features_by_day = {}
     @row_fields.each do |row, fields|
       id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
-      day = (@now - (@now.to_i - timestamp)).to_date
+      day = (@now - (@now.to_i - timestamp)).to_date.to_s
       price_features_by_day[day] ||= {}
-
+      prev_value = price_features_by_day[day][fields] || 1.0/0
+      price_features_by_day[day][fields] = [prev_value, price].min
     end
+
+    File.open('features.json', 'w') { |f| f.write(price_features_by_day) }
   end
 end
 
