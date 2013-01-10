@@ -6,12 +6,17 @@ class ServerAnalyzer
     @db = SQLite3::Database.new(dbfile)
     FileUtils.mkdir_p('csv')
     @rows = @db.execute( "select * from servers order by timestamp" )
-    now = Time.now
+    @now = Time.now
 
     @days = @rows.group_by do |row|
-      timestamp = row.last
-      timestamp = now - (now.to_i - timestamp)
-      timestamp.to_s
+      timestamp = @row.last
+      timestamp = @now - (@now.to_i - timestamp)
+      timestamp.to_date
+    end
+
+    @row_fields = {}
+    @rows.each do |row|
+      @row_fields[row] = {}
     end
   end
 
@@ -20,7 +25,9 @@ class ServerAnalyzer
 
     field_values = @rows.map do |row|
       id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
-      yield(id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp)
+      field_value = yield(id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp)
+      @row_fields[row][filename] = field_value
+      field_value
     end.uniq.sort_by { |f| f.to_i }
 
     f = File.open("csv/#{filename}.csv", 'w')
@@ -54,6 +61,16 @@ class ServerAnalyzer
     f_available.close
     f.close
   end
+
+  def generate_json
+    price_features_by_day = {}
+    @row_fields.each do |row, fields|
+      id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
+      day = (@now - (@now.to_i - timestamp)).to_date
+      price_features_by_day[day] ||= {}
+
+    end
+  end
 end
 
 analyzer = ServerAnalyzer.new("servers.db")
@@ -86,3 +103,6 @@ end
 analyzer.generate_csv("ram") do |id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp|
   ram
 end
+
+### JSON for dynamic filtering ###
+analyzer.generate_json()
