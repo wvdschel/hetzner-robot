@@ -9,7 +9,7 @@ class ServerAnalyzer
     @now = Time.now
 
     @days = @rows.group_by do |row|
-      timestamp = @row.last
+      timestamp = row.last
       timestamp = @now - (@now.to_i - timestamp)
       timestamp.to_date
     end
