@@ -38,7 +38,7 @@ class ServerAnalyzer
     f_available.puts("Date,"+field_values.join(','))
 
     @days.each do |day, rows|
-      rows_by_field = @rows.group_by do |row|
+      rows_by_field = rows.group_by do |row|
         id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp = row
         yield(id, cpu, cpu_benchmark, ram, hd, price, nextreduce, timestamp)
       end
