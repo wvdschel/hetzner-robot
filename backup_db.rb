@@ -1,10 +1,13 @@
+require 'fileutils'
+require 'sqlite3'
+
 orig_file   = 'servers.db'
 new_file    = "new_#{orig_file}"
 backup_file = "#{Time.now.to_i}_#{orig_file}"
 
-File.copy(orig_file, backup_file)
+FileUtils.cp(orig_file, backup_file)
 db = SQLite3::Database.new(orig_file)
-rows = @db.execute( "select * from servers order by timestamp" )
+rows = db.execute( "select * from servers order by timestamp" )
 new_db = SQLite3::Database.new(new_file)
 
 new_db.execute <<-SQL
@@ -19,7 +22,10 @@ new_db.execute <<-SQL
     timestamp integer
   );
 SQL
-rows.each { |row| new_db.execute("insert into servers values (?, ?, ?, ?, ?, ?, ?, ?)", row) }
+rows.each_with_index do |row,i|
+	new_db.execute("insert into servers values (?, ?, ?, ?, ?, ?, ?, ?)", row)
+	puts "Finished #{i+1}/#{rows.size}"
+end
 db.close
 new_db.close
 
