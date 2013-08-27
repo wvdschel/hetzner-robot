@@ -46,3 +46,4 @@ doc.css('div.box_wide').each do |machine|
     entry['nextreduce'],
     timestamp]
 end
+db.close
